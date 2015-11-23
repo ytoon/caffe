@@ -325,6 +325,8 @@ class LocalConvolutionLayer : public BaseConvolutionLayer<Dtype> {
   virtual inline const char* type() const { return "LocalConvolution"; }
 
  protected:
+  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
@@ -335,6 +337,9 @@ class LocalConvolutionLayer : public BaseConvolutionLayer<Dtype> {
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
   virtual inline bool reverse_dimensions() { return false; }
   virtual void compute_output_shape();
+
+  int weight_share_w;
+  int weight_share_h;
 };
 #ifdef USE_CUDNN
 /*
