@@ -568,6 +568,7 @@ message LocalConvolutionParameter {
   repeated uint32 pad = 3; // The padding size; defaults to 0
   repeated uint32 kernel_size = 4; // The kernel size
   repeated uint32 stride = 6; // The stride; defaults to 1
+  repeated uint32 kernel_share_size = 20; // The kernel_share size; defaults to 1
 
   // For 2D convolution only, the *_h and *_w versions may also be used to
   // specify both spatial dimensions.
@@ -583,8 +584,8 @@ message LocalConvolutionParameter {
   optional FillerParameter weight_filler = 7; // The filler for the weight
   optional FillerParameter bias_filler = 8; // The filler for the bias
 
-  optional uint32 weight_share_w = 18; // The weight share region width
-  optional uint32 weight_share_h = 19; // The weight share region height
+  optional uint32 kernel_share_w = 18; // The kernel share region width
+  optional uint32 kernel_share_h = 19; // The kernel share region height
   
   enum Engine {
     DEFAULT = 0;

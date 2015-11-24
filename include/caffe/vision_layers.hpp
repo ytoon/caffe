@@ -68,6 +68,18 @@ class BaseConvolutionLayer : public Layer<Dtype> {
   // Compute height_out_ and width_out_ from other parameters.
   virtual void compute_output_shape() = 0;
 
+  /// @brief Set the conv_out_channels_.
+  inline void set_conv_out_channels(int conv_out_channels) {
+    conv_out_channels_ = conv_out_channels;
+  }
+  /// @brief Set the conv_in_channels_.
+  inline void set_conv_in_channels(int conv_in_channels) {
+    conv_in_channels_ = conv_in_channels;
+  }
+  /// @brief Set the kernel_dim_.
+  inline void set_kernel_dim(int kernel_dim) {
+    kernel_dim_ = kernel_dim;
+  }
   /// @brief The spatial dimensions of a filter kernel.
   Blob<int> kernel_shape_;
   /// @brief The spatial dimensions of the stride.
@@ -338,8 +350,8 @@ class LocalConvolutionLayer : public BaseConvolutionLayer<Dtype> {
   virtual inline bool reverse_dimensions() { return false; }
   virtual void compute_output_shape();
 
-  int weight_share_w;
-  int weight_share_h;
+  /// @brief The spatial dimensions of the weight_share.
+  Blob<int> kernel_share_;
 };
 #ifdef USE_CUDNN
 /*
