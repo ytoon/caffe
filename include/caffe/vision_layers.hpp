@@ -67,19 +67,64 @@ class BaseConvolutionLayer : public Layer<Dtype> {
   virtual bool reverse_dimensions() = 0;
   // Compute height_out_ and width_out_ from other parameters.
   virtual void compute_output_shape() = 0;
-
   /// @brief Set the conv_out_channels_.
   inline void set_conv_out_channels(int conv_out_channels) {
     conv_out_channels_ = conv_out_channels;
+  }
+  /// @brief Get the conv_out_channels_.
+  inline int get_conv_out_channels() {
+    return conv_out_channels_;
+  }
+  /// @brief Set the conv_out_spatial_dim_.
+  inline void set_conv_out_spatial_dim(int conv_out_spatial_dim) {
+    conv_out_spatial_dim_ = conv_out_spatial_dim;
+  }
+  /// @brief Get the conv_out_spatial_dim_.
+  inline int get_conv_out_spatial_dim() {
+    return conv_out_spatial_dim_;
   }
   /// @brief Set the conv_in_channels_.
   inline void set_conv_in_channels(int conv_in_channels) {
     conv_in_channels_ = conv_in_channels;
   }
+  /// @brief Get the conv_in_channels_.
+  inline int get_conv_in_channels() {
+    return conv_in_channels_;
+  }
   /// @brief Set the kernel_dim_.
   inline void set_kernel_dim(int kernel_dim) {
     kernel_dim_ = kernel_dim;
   }
+  /// @brief Set the kernel_dim_.
+  inline int get_kernel_dim() {
+    return kernel_dim_;
+  }
+  /// @brief Set the col_offset_.
+  inline void set_col_offset(int col_offset) {
+    col_offset_ = col_offset;
+  }
+  /// @brief Set the output_offset_.
+  inline void set_output_offset(int output_offset) {
+    output_offset_ = output_offset;
+  }
+  /// @brief Set the num_kernels_im2col_.
+  inline void set_num_kernels_im2col(int num_kernels_im2col) {
+    num_kernels_im2col_ = num_kernels_im2col;
+  }
+  /// @brief Set the output_offset_.
+  inline void set_num_kernels_col2im(int num_kernels_col2im) {
+    num_kernels_col2im = num_kernels_col2im;
+  }
+  
+  /// @brief Get the col_buffer_.
+  inline Blob<Dtype>* get_col_buffer() {
+    return &col_buffer_;
+  }
+  /// @brief Get the bias_multiplier_.
+  inline Blob<Dtype>* get_bias_multiplier() {
+    return &bias_multiplier_;
+  }
+  
   /// @brief The spatial dimensions of a filter kernel.
   Blob<int> kernel_shape_;
   /// @brief The spatial dimensions of the stride.
@@ -338,6 +383,8 @@ class LocalConvolutionLayer : public BaseConvolutionLayer<Dtype> {
 
  protected:
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
