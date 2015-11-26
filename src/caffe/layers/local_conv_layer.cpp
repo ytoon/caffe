@@ -219,6 +219,11 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   // Shape the tops.
   this->bottom_shape_ = &bottom[0]->shape();
   compute_output_shape();
+  // Setup the kernel share region dimensions.
+  const int* kernel_share_data = kernel_share_.cpu_data();
+  kernel_share_region_h_ = this->output_shape_[0] / kernel_share_data[0];
+  kernel_share_region_w_ = this->output_shape_[1] / kernel_share_data[1];
+
   vector<int> top_shape(bottom[0]->shape().begin(),
       bottom[0]->shape().begin() + this->channel_axis_);
   top_shape.push_back(this->num_output_);
@@ -249,6 +254,13 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       conv_input_shape_data[i] = bottom[0]->shape(this->channel_axis_ + i);
     }
   }
+  // Setup the temporary blob which is used to store the convolutional result.
+  vector<int> blob_buffer_shape(1, 1);
+  blob_buffer_shape.push_back(this->num_output_ * kernel_share_data[0] * kernel_share_data[1]);
+  for (int i = 0; i < this->num_spatial_axes_; ++i) {
+    blob_buffer_shape.push_back(this->output_shape_[i]);
+  }
+  blob_buffer_.Reshape(blob_buffer_shape);
   // The im2col result buffer will only hold one image at a time to avoid
   // overly large memory usage. In the special case of 1x1 convolution
   // it goes lazily unused to save memory.
@@ -287,12 +299,27 @@ void LocalConvolutionLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& botto
   for (int i = 0; i < bottom.size(); ++i) {
     const Dtype* bottom_data = bottom[i]->cpu_data();
     Dtype* top_data = top[i]->mutable_cpu_data();
+    Dtype* blob_buffer = blob_buffer_.mutable_cpu_data();
     for (int n = 0; n < this->num_; ++n) {
       this->forward_cpu_gemm(bottom_data + n * this->bottom_dim_, weight,
-          top_data + n * this->top_dim_);
+          blob_buffer);
       if (this->bias_term_) {
         const Dtype* bias = this->blobs_[1]->cpu_data();
-        this->forward_cpu_bias(top_data + n * this->top_dim_, bias);
+        this->forward_cpu_bias(blob_buffer, bias);
+      }
+      const int* kernel_share_data = kernel_share_.cpu_data();
+      int feature_map_num = this->num_output_ * kernel_share_data[0] * kernel_share_data[1];
+      for (int k = 0; k < feature_map_num; k++) {
+        int group = k / kernel_share_data[0] * kernel_share_data[1];
+        int index = k % (kernel_share_data[0] * kernel_share_data[1]);
+        int height_index = index / kernel_share_data[1];
+        int out_spatial_dim = this->out_spatial_dim_;
+        int out_spatial_dim_width = this->output_shape_[1];
+        int offset = out_spatial_dim * kernel_share_data[0] * kernel_share_data[1];
+        for (int h = 0; h < kernel_share_region_h_; h++) {
+          caffe_copy(kernel_share_region_w_, blob_buffer + group * offset + height_index * out_spatial_dim_width * kernel_share_region_h_ + index * (out_spatial_dim + kernel_share_region_w_)+ h * out_spatial_dim_width, 
+            top_data + group * out_spatial_dim + height_index * out_spatial_dim_width * kernel_share_region_h_ + index * kernel_share_region_w_ + h * out_spatial_dim_width);
+        }
       }
     }
   }

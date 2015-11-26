@@ -397,8 +397,14 @@ class LocalConvolutionLayer : public BaseConvolutionLayer<Dtype> {
   virtual inline bool reverse_dimensions() { return false; }
   virtual void compute_output_shape();
 
+  /// @brief The kernel share region height.
+  int kernel_share_region_h_;
+  /// @brief The kernel share region width.
+  int kernel_share_region_w_;
   /// @brief The spatial dimensions of the weight_share.
   Blob<int> kernel_share_;
+  /// @brief The temporary blob of the local convolutional layer.
+  Blob<Dtype> blob_buffer_;
 };
 #ifdef USE_CUDNN
 /*
