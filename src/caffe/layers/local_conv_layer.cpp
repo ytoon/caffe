@@ -307,28 +307,22 @@ void LocalConvolutionLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& botto
         const Dtype* bias = this->blobs_[1]->cpu_data();
         this->forward_cpu_bias(blob_buffer, bias);
       }
-      // Fuse the dimensions(1 * (N * map_fuse_num) * H * W) of convolutional output to
+      // Fuse the dimensions(1 * (N * group_channels) * H * W) of convolutional output to
       // the dimensions(1 * N * H * W) of the layer output
       const int* kernel_share_data = kernel_share_.cpu_data();
-      // The number of initial feature maps which fuse to one fused feature map
-      int map_fuse_num = kernel_share_data[0] * kernel_share_data[1];
-      // The number of initial maps
-      int map_num = this->num_output_ * map_fuse_num;
-      for (int k = 0; k < map_num; k++) {
-        // The number of fused feature map
-        int group = k / map_fuse_num;
-        // The index of initial feature maps which fuse to one fused feature map
-        int index = k % map_fuse_num;
-        int out_spatial_dim = this->out_spatial_dim_;
-        int out_spatial_dim_width = this->output_shape_[1];
-
-        int height_offset = (index / kernel_share_data[1]) * out_spatial_dim_width;
-
-        int map_offset = out_spatial_dim * map_fuse_num;
+      int group_channels = kernel_share_data[0] * kernel_share_data[1];
+      int channels = this->num_output_ * group_channels;
+      for (int k = 0; k < channels; k++) {
+        int group = k / group_channels;
+        int index = k % group_channels;
+        int row_index = index / kernel_share_data[1];
+        int col_index = index % kernel_share_data[1];
+        
         for (int h = 0; h < kernel_share_region_h_; h++) {
-          caffe_copy(kernel_share_region_w_, blob_buffer + group * map_offset + height_offset * kernel_share_region_h_ + index * (out_spatial_dim + kernel_share_region_w_)+ h * out_spatial_dim_width, 
-            top_data + group * out_spatial_dim + height_offset * kernel_share_region_h_ + index * kernel_share_region_w_ + h * out_spatial_dim_width);
+          caffe_copy(kernel_share_region_w_, blob_buffer + group * this->out_spatial_dim_ * group_channels + index * this->out_spatial_dim_ + row_index * this->output_shape_[1] * kernel_share_region_h_ + col_index * kernel_share_region_w_ + h * this->out_spatial_dim_, 
+            top_data + group * this->out_spatial_dim_ + row_index * this->output_shape_[1] * kernel_share_region_h_ + col_index * kernel_share_region_w_ + h * this->out_spatial_dim_);
         }
+
       }
     }
   }
