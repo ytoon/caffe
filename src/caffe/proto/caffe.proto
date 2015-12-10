@@ -583,9 +583,6 @@ message LocalConvolutionParameter {
 
   optional FillerParameter weight_filler = 7; // The filler for the weight
   optional FillerParameter bias_filler = 8; // The filler for the bias
-
-  optional uint32 kernel_share_w = 18; // The kernel share region width
-  optional uint32 kernel_share_h = 19; // The kernel share region height
   
   enum Engine {
     DEFAULT = 0;
