@@ -1,5 +1,9 @@
+#include <algorithm>
 #include <vector>
 
+#include "caffe/filler.hpp"
+#include "caffe/util/im2col.hpp"
+#include "caffe/util/math_functions.hpp"
 #include "caffe/local_conv_layer.hpp"
 
 namespace caffe {
@@ -167,8 +171,10 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   int* kernel_shape_data = kernel_shape_.mutable_cpu_data();
   local_weights_height_ = channels_ * kernel_shape_data[0] * kernel_shape_data[1];
   local_weights_width_ = conv_out_spatial_dim_;
+  local_weights_dims_ = local_weights_height_ * local_weights_width_;
   // TODO: local conv with group_
   vector<int> weight_shape(2, 1);
+  weight_shape[0] = conv_out_channels_;
   weight_shape.push_back(local_weights_height_);
   weight_shape.push_back(local_weights_width_);
   bias_term_ = this->layer_param_.local_convolution_param().bias_term();
@@ -240,7 +246,7 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       col_buffer_shape_.push_back(output_shape_[i]);
     }
   }
-  col_buffer.Reshape(col_buffer_shape_);
+  col_buffer_.Reshape(col_buffer_shape_);
   bottom_dim_ = bottom[0]->count(this->channel_axis_);
   top_dim_ = top[0]->count(this->channel_axis_);
   // TODO: the num_kernels_im2col_ and num_kernels_col2im_ should be thinked twice.
@@ -248,11 +254,16 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   num_kernels_col2im_ = reverse_dimensions() ? top_dim_ : bottom_dim_;
   // Set up the all ones "bias multiplier" for adding biases by BLAS
   out_spatial_dim_ = top[0]->count(first_spatial_axis);
+  vector<int> weights_multiplier_shape(3, 1);
+  weights_multiplier_shape.push_back(local_weights_height_);
+  weights_multiplier_.Reshape(weights_multiplier_shape);
+  caffe_set(weights_multiplier_.count(), Dtype(1),
+      weights_multiplier_.mutable_cpu_data());
   if (bias_term_) {
     vector<int> bias_multiplier_shape(1, out_spatial_dim_);
-    bias_multiplier.Reshape(bias_multiplier_shape);
-    caffe_set(bias_multiplier->count(), Dtype(1),
-        bias_multiplier->mutable_cpu_data());
+    bias_multiplier_.Reshape(bias_multiplier_shape);
+    caffe_set(bias_multiplier_.count(), Dtype(1),
+        bias_multiplier_.mutable_cpu_data());
   }
 }
 
@@ -263,13 +274,12 @@ void LocalConvolutionLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& botto
   for (int i = 0; i < bottom.size(); ++i) {
     const Dtype* bottom_data = bottom[i]->cpu_data();
     Dtype* top_data = top[i]->mutable_cpu_data();
-    Dtype* blob_buffer = blob_buffer_.mutable_cpu_data();
-    for (int n = 0; n < this->num_; ++n) {
-      this->forward_cpu_gemm(bottom_data + n * this->bottom_dim_, weight,
-          blob_buffer);
-      if (this->bias_term_) {
+    for (int n = 0; n < num_; ++n) {
+      forward_cpu_gemm(bottom_data + n * bottom_dim_, weight,
+          top_data + n * top_dim_);
+      if (bias_term_) {
         const Dtype* bias = this->blobs_[1]->cpu_data();
-        this->forward_cpu_bias(blob_buffer, bias);
+        forward_cpu_bias(top_data + n * top_dim_, bias);
       }
     }
   }
@@ -285,27 +295,103 @@ void LocalConvolutionLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
     const Dtype* bottom_data = bottom[i]->cpu_data();
     Dtype* bottom_diff = bottom[i]->mutable_cpu_diff();
     // Bias gradient, if necessary.
-    if (this->bias_term_ && this->param_propagate_down_[1]) {
+    if (bias_term_ && this->param_propagate_down_[1]) {
       Dtype* bias_diff = this->blobs_[1]->mutable_cpu_diff();
-      for (int n = 0; n < this->num_; ++n) {
-        this->backward_cpu_bias(bias_diff, top_diff + n * this->top_dim_);
+      for (int n = 0; n < num_; ++n) {
+        backward_cpu_bias(bias_diff, top_diff + n * top_dim_);
       }
     }
     if (this->param_propagate_down_[0] || propagate_down[i]) {
-      for (int n = 0; n < this->num_; ++n) {
+      for (int n = 0; n < num_; ++n) {
         // gradient w.r.t. weight. Note that we will accumulate diffs.
         if (this->param_propagate_down_[0]) {
-          this->weight_cpu_gemm(bottom_data + n * this->bottom_dim_,
-              top_diff + n * this->top_dim_, weight_diff);
+          weight_cpu_gemm(bottom_data + n * bottom_dim_,
+              top_diff + n * top_dim_, weight_diff);
         }
         // gradient w.r.t. bottom data, if necessary.
         if (propagate_down[i]) {
-          this->backward_cpu_gemm(top_diff + n * this->top_dim_, weight,
-              bottom_diff + n * this->bottom_dim_);
+          backward_cpu_gemm(top_diff + n * top_dim_, weight,
+              bottom_diff + n * bottom_dim_);
         }
       }
     }
   }
+}
+
+template <typename Dtype>
+void LocalConvolutionLayer<Dtype>::forward_cpu_gemm(const Dtype* input,
+    const Dtype* weights, Dtype* output, bool skip_im2col) {
+  const Dtype* col_buff = input;
+  if (!is_1x1_) {
+    if (!skip_im2col) {
+      conv_im2col_cpu(input, col_buffer_.mutable_cpu_data());
+    }
+    col_buff = col_buffer_.cpu_data();
+  }
+  Blob<Dtype> intermediate;
+  intermediate.Reshape(1, 1, local_weights_height_, local_weights_width_);
+  for (int m = 0; m < num_output_; m++) {
+    caffe_mul<Dtype>(local_weights_dims_, col_buff, weights + this->blobs_[0]->offset(m),
+      intermediate.mutable_cpu_data());
+    caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, 1, local_weights_width_,
+      local_weights_height_, (Dtype)1., weights_multiplier_.cpu_data(), 
+      intermediate.cpu_data(), (Dtype)0., output + conv_out_spatial_dim_);
+  }
+}
+
+template <typename Dtype>
+void LocalConvolutionLayer<Dtype>::forward_cpu_bias(Dtype* output,
+    const Dtype* bias) {
+  caffe_add<Dtype>(num_output_ * out_spatial_dim_, bias, output, output);
+}
+
+template <typename Dtype>
+void LocalConvolutionLayer<Dtype>::backward_cpu_gemm(const Dtype* output,
+    const Dtype* weights, Dtype* input) {
+  Dtype* col_buff = col_buffer_.mutable_cpu_data();
+  if (is_1x1_) {
+    col_buff = input;
+  }
+  Blob<Dtype> intermediate;
+  intermediate.Reshape(1, 1, 1, local_weights_width_);
+  for (int m = 0; m < num_output_; m++) {
+    for (int k = 0; k < local_weights_height_; k++) {
+      caffe_mul<Dtype>(local_weights_width_, output + this->blobs_[0]->offset(m),
+        weights + k * conv_out_spatial_dim_, intermediate.mutable_cpu_data());
+      caffe_cpu_axpby<Dtype>(local_weights_width_, (Dtype)1., intermediate.cpu_data(), 
+        (Dtype)1., input + k * conv_out_spatial_dim_);
+    }
+  }
+  if (!is_1x1_) {
+    conv_col2im_cpu(col_buff, input);
+  }
+}
+
+template <typename Dtype>
+void LocalConvolutionLayer<Dtype>::weight_cpu_gemm(const Dtype* input,
+    const Dtype* output, Dtype* weights) {
+  const Dtype* col_buff = input;
+  if (!is_1x1_) {
+    conv_im2col_cpu(input, col_buffer_.mutable_cpu_data());
+    col_buff = col_buffer_.cpu_data();
+  }
+  Blob<Dtype> intermediate;
+  intermediate.Reshape(1, 1, local_weights_height_, local_weights_width_);
+  for (int m = 0; m < num_output_; m++) {
+    Dtype* local_weight_diff = weights + this->blobs_[0]->offset(m);
+    for (int k = 0; k < local_weights_height_; k++) {
+      caffe_mul<Dtype>(local_weights_width_, output + k * conv_out_spatial_dim_,
+        col_buff + k * conv_out_spatial_dim_, intermediate.mutable_cpu_data() + k * conv_out_spatial_dim_);
+    }
+    caffe_cpu_axpby<Dtype>(local_weights_dims_, (Dtype)1., intermediate.cpu_data(), 
+      (Dtype)1., local_weight_diff);
+  }
+}
+
+template <typename Dtype>
+void LocalConvolutionLayer<Dtype>::backward_cpu_bias(Dtype* bias,
+    const Dtype* input) {
+  caffe_add<Dtype>(num_output_ * out_spatial_dim_, bias, input, bias);
 }
 
 #ifdef CPU_ONLY
