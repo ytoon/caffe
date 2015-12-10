@@ -214,7 +214,7 @@ class LocalConvolutionLayer : public BaseConvolutionLayer<Dtype> {
   int conv_out_spatial_dim_;
   int kernel_dim_;
   int col_offset_; // TODO: maybe removed
-  int output_offset_; // TODO: maybe removed
+  int output_offset_;
   int local_weights_height_;
   int local_weights_width_;
   int local_weights_dims_;

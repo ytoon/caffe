@@ -220,6 +220,7 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   // TODO: the kernel_dim_ and weight_offset_ should be thinked twice.
   kernel_dim_ = this->blobs_[0]->count(1);
   weight_offset_ = this->num_output_ * kernel_dim_;
+  output_offset_ = conv_out_spatial_dim_;
   // Propagate gradients to the parameters (as directed by backward pass).
   this->param_propagate_down_.resize(this->blobs_.size(), true);
 
@@ -335,7 +336,7 @@ void LocalConvolutionLayer<Dtype>::forward_cpu_gemm(const Dtype* input,
       intermediate.mutable_cpu_data());
     caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, 1, local_weights_width_,
       local_weights_height_, (Dtype)1., weights_multiplier_.cpu_data(), 
-      intermediate.cpu_data(), (Dtype)0., output + conv_out_spatial_dim_);
+      intermediate.cpu_data(), (Dtype)0., output + output_offset_);
   }
 }
 
@@ -357,9 +358,9 @@ void LocalConvolutionLayer<Dtype>::backward_cpu_gemm(const Dtype* output,
   for (int m = 0; m < num_output_; m++) {
     for (int k = 0; k < local_weights_height_; k++) {
       caffe_mul<Dtype>(local_weights_width_, output + this->blobs_[0]->offset(m),
-        weights + k * conv_out_spatial_dim_, intermediate.mutable_cpu_data());
+        weights + k * output_offset_, intermediate.mutable_cpu_data());
       caffe_cpu_axpby<Dtype>(local_weights_width_, (Dtype)1., intermediate.cpu_data(), 
-        (Dtype)1., input + k * conv_out_spatial_dim_);
+        (Dtype)1., input + k * output_offset_);
     }
   }
   if (!is_1x1_) {
@@ -380,8 +381,8 @@ void LocalConvolutionLayer<Dtype>::weight_cpu_gemm(const Dtype* input,
   for (int m = 0; m < num_output_; m++) {
     Dtype* local_weight_diff = weights + this->blobs_[0]->offset(m);
     for (int k = 0; k < local_weights_height_; k++) {
-      caffe_mul<Dtype>(local_weights_width_, output + k * conv_out_spatial_dim_,
-        col_buff + k * conv_out_spatial_dim_, intermediate.mutable_cpu_data() + k * conv_out_spatial_dim_);
+      caffe_mul<Dtype>(local_weights_width_, output + k * output_offset_,
+        col_buff + k * output_offset_, intermediate.mutable_cpu_data() + k * output_offset_);
     }
     caffe_cpu_axpby<Dtype>(local_weights_dims_, (Dtype)1., intermediate.cpu_data(), 
       (Dtype)1., local_weight_diff);
