@@ -215,11 +215,13 @@ class LocalConvolutionLayer : public BaseConvolutionLayer<Dtype> {
   int kernel_dim_;
   int col_offset_; // TODO: maybe removed
   int output_offset_;
-  int local_weights_height_;
-  int local_weights_width_;
+  int local_weights_h_;
+  int local_weights_w_;
   int local_weights_dims_;
 
   Blob<Dtype> col_buffer_;
+  Blob<Dtype> output_buffer_;
+  Blob<Dtype> conv_output_buffer_;
   Blob<Dtype> weights_multiplier_;
   Blob<Dtype> bias_multiplier_;
 

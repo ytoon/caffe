@@ -169,18 +169,18 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   // - blobs_[0] holds the local filter weights
   // - blobs_[1] holds the local biases (optional)
   int* kernel_shape_data = kernel_shape_.mutable_cpu_data();
-  local_weights_height_ = channels_ * kernel_shape_data[0] * kernel_shape_data[1];
-  local_weights_width_ = conv_out_spatial_dim_;
-  local_weights_dims_ = local_weights_height_ * local_weights_width_;
+  local_weights_h_ = channels_ * kernel_shape_data[0] * kernel_shape_data[1];
+  local_weights_w_ = conv_out_spatial_dim_;
+  local_weights_dims_ = local_weights_h_ * local_weights_w_;
   // TODO: local conv with group_
   vector<int> weight_shape(2, 1);
   weight_shape[0] = conv_out_channels_;
-  weight_shape.push_back(local_weights_height_);
-  weight_shape.push_back(local_weights_width_);
+  weight_shape.push_back(local_weights_h_);
+  weight_shape.push_back(local_weights_w_);
   bias_term_ = this->layer_param_.local_convolution_param().bias_term();
   vector<int> bias_shape(2, 1);
   bias_shape.push_back(num_output_);
-  bias_shape.push_back(local_weights_width_);
+  bias_shape.push_back(local_weights_w_);
   if (this->blobs_.size() > 0) {
     CHECK_EQ(1 + bias_term_, this->blobs_.size())
         << "Incorrect number of weight blobs.";
@@ -239,7 +239,7 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   // overly large memory usage. In the special case of 1x1 convolution
   // it goes lazily unused to save memory.
   col_buffer_shape_.clear();
-  col_buffer_shape_.push_back(local_weights_height_ * group_);
+  col_buffer_shape_.push_back(local_weights_h_ * group_);
   for (int i = 0; i < num_spatial_axes_; ++i) {
     if (reverse_dimensions()) {
       col_buffer_shape_.push_back(input_shape(i + 1));
@@ -248,6 +248,16 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
     }
   }
   col_buffer_.Reshape(col_buffer_shape_);
+  // 
+  vector<int> output_buffer_shape(2, 1);
+  output_buffer_shape.push_back(local_weights_h_);
+  output_buffer_shape.push_back(local_weights_w_);
+  output_buffer_.Reshape(output_buffer_shape);
+  // 
+  vector<int> oconv_output_buffer_shape(3, 1);
+  oconv_output_buffer_shape.push_back(local_weights_w_);
+  conv_output_buffer_.Reshape(oconv_output_buffer_shape);
+  
   bottom_dim_ = bottom[0]->count(this->channel_axis_);
   top_dim_ = top[0]->count(this->channel_axis_);
   // TODO: the num_kernels_im2col_ and num_kernels_col2im_ should be thinked twice.
@@ -256,7 +266,7 @@ void LocalConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   // Set up the all ones "bias multiplier" for adding biases by BLAS
   out_spatial_dim_ = top[0]->count(first_spatial_axis);
   vector<int> weights_multiplier_shape(3, 1);
-  weights_multiplier_shape.push_back(local_weights_height_);
+  weights_multiplier_shape.push_back(local_weights_h_);
   weights_multiplier_.Reshape(weights_multiplier_shape);
   caffe_set(weights_multiplier_.count(), Dtype(1),
       weights_multiplier_.mutable_cpu_data());
@@ -329,14 +339,12 @@ void LocalConvolutionLayer<Dtype>::forward_cpu_gemm(const Dtype* input,
     }
     col_buff = col_buffer_.cpu_data();
   }
-  Blob<Dtype> intermediate;
-  intermediate.Reshape(1, 1, local_weights_height_, local_weights_width_);
   for (int m = 0; m < num_output_; m++) {
     caffe_mul<Dtype>(local_weights_dims_, col_buff, weights + this->blobs_[0]->offset(m),
-      intermediate.mutable_cpu_data());
-    caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, 1, local_weights_width_,
-      local_weights_height_, (Dtype)1., weights_multiplier_.cpu_data(), 
-      intermediate.cpu_data(), (Dtype)0., output + output_offset_);
+        output_buffer_.mutable_cpu_data());
+    caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, 1, local_weights_w_,
+        local_weights_h_, (Dtype)1., weights_multiplier_.cpu_data(), 
+        output_buffer_.cpu_data(), (Dtype)0., output + output_offset_);
   }
 }
 
@@ -353,14 +361,12 @@ void LocalConvolutionLayer<Dtype>::backward_cpu_gemm(const Dtype* output,
   if (is_1x1_) {
     col_buff = input;
   }
-  Blob<Dtype> intermediate;
-  intermediate.Reshape(1, 1, 1, local_weights_width_);
   for (int m = 0; m < num_output_; m++) {
-    for (int k = 0; k < local_weights_height_; k++) {
-      caffe_mul<Dtype>(local_weights_width_, output + this->blobs_[0]->offset(m),
-        weights + k * output_offset_, intermediate.mutable_cpu_data());
-      caffe_cpu_axpby<Dtype>(local_weights_width_, (Dtype)1., intermediate.cpu_data(), 
-        (Dtype)1., input + k * output_offset_);
+    for (int k = 0; k < local_weights_h_; k++) {
+      caffe_mul<Dtype>(local_weights_w_, output + this->blobs_[0]->offset(m),
+          weights + k * output_offset_, conv_output_buffer_.mutable_cpu_data());
+      caffe_cpu_axpby<Dtype>(local_weights_w_, (Dtype)1., conv_output_buffer_.cpu_data(), 
+          (Dtype)1., input + k * output_offset_);
     }
   }
   if (!is_1x1_) {
@@ -376,16 +382,14 @@ void LocalConvolutionLayer<Dtype>::weight_cpu_gemm(const Dtype* input,
     conv_im2col_cpu(input, col_buffer_.mutable_cpu_data());
     col_buff = col_buffer_.cpu_data();
   }
-  Blob<Dtype> intermediate;
-  intermediate.Reshape(1, 1, local_weights_height_, local_weights_width_);
   for (int m = 0; m < num_output_; m++) {
     Dtype* local_weight_diff = weights + this->blobs_[0]->offset(m);
-    for (int k = 0; k < local_weights_height_; k++) {
-      caffe_mul<Dtype>(local_weights_width_, output + k * output_offset_,
-        col_buff + k * output_offset_, intermediate.mutable_cpu_data() + k * output_offset_);
+    for (int k = 0; k < local_weights_h_; k++) {
+      caffe_mul<Dtype>(local_weights_w_, output + k * output_offset_,
+          col_buff + k * output_offset_, output_buffer_.mutable_cpu_data() + k * output_offset_);
     }
-    caffe_cpu_axpby<Dtype>(local_weights_dims_, (Dtype)1., intermediate.cpu_data(), 
-      (Dtype)1., local_weight_diff);
+    caffe_cpu_axpby<Dtype>(local_weights_dims_, (Dtype)1., output_buffer_.cpu_data(), 
+        (Dtype)1., local_weight_diff);
   }
 }
 
