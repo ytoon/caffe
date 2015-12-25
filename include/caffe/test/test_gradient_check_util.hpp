@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <fstream>
 
 #include "caffe/layer.hpp"
 #include "caffe/net.hpp"
