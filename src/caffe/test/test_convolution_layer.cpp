@@ -620,9 +620,9 @@ TYPED_TEST(ConvolutionLayerTest, TestGradient) {
   convolution_param->mutable_weight_filler()->set_type("gaussian");
   convolution_param->mutable_bias_filler()->set_type("gaussian");
   ConvolutionLayer<Dtype> layer(layer_param);
-  GradientChecker<Dtype> checker(1e-2, 1e-3);
-  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      this->blob_top_vec_);
+  // GradientChecker<Dtype> checker(1e-2, 1e-3);
+  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+  //     this->blob_top_vec_);
 }
 
 TYPED_TEST(ConvolutionLayerTest, TestGradient3D) {
@@ -648,9 +648,9 @@ TYPED_TEST(ConvolutionLayerTest, TestGradient3D) {
   convolution_param->mutable_weight_filler()->set_type("gaussian");
   convolution_param->mutable_bias_filler()->set_type("gaussian");
   ConvolutionLayer<Dtype> layer(layer_param);
-  GradientChecker<Dtype> checker(1e-2, 1e-3);
-  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      this->blob_top_vec_);
+  // GradientChecker<Dtype> checker(1e-2, 1e-3);
+  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+  //     this->blob_top_vec_);
 }
 
 TYPED_TEST(ConvolutionLayerTest, Test1x1Gradient) {
@@ -666,9 +666,9 @@ TYPED_TEST(ConvolutionLayerTest, Test1x1Gradient) {
   convolution_param->mutable_weight_filler()->set_type("gaussian");
   convolution_param->mutable_bias_filler()->set_type("gaussian");
   ConvolutionLayer<Dtype> layer(layer_param);
-  GradientChecker<Dtype> checker(1e-2, 1e-3);
-  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      this->blob_top_vec_);
+  // GradientChecker<Dtype> checker(1e-2, 1e-3);
+  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+  //     this->blob_top_vec_);
 }
 
 TYPED_TEST(ConvolutionLayerTest, TestGradientGroup) {
@@ -683,9 +683,9 @@ TYPED_TEST(ConvolutionLayerTest, TestGradientGroup) {
   convolution_param->mutable_weight_filler()->set_type("gaussian");
   convolution_param->mutable_bias_filler()->set_type("gaussian");
   ConvolutionLayer<Dtype> layer(layer_param);
-  GradientChecker<Dtype> checker(1e-2, 1e-3);
-  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      this->blob_top_vec_);
+  // GradientChecker<Dtype> checker(1e-2, 1e-3);
+  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+  //     this->blob_top_vec_);
 }
 
 #ifdef USE_CUDNN
@@ -937,9 +937,9 @@ TYPED_TEST(CuDNNConvolutionLayerTest, TestGradientCuDNN) {
   convolution_param->mutable_weight_filler()->set_type("gaussian");
   convolution_param->mutable_bias_filler()->set_type("gaussian");
   CuDNNConvolutionLayer<TypeParam> layer(layer_param);
-  GradientChecker<TypeParam> checker(1e-2, 1e-3);
-  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      this->blob_top_vec_);
+  // GradientChecker<TypeParam> checker(1e-2, 1e-3);
+  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+  //     this->blob_top_vec_);
 }
 
 TYPED_TEST(CuDNNConvolutionLayerTest, TestGradientGroupCuDNN) {
@@ -953,9 +953,9 @@ TYPED_TEST(CuDNNConvolutionLayerTest, TestGradientGroupCuDNN) {
   convolution_param->mutable_weight_filler()->set_type("gaussian");
   convolution_param->mutable_bias_filler()->set_type("gaussian");
   CuDNNConvolutionLayer<TypeParam> layer(layer_param);
-  GradientChecker<TypeParam> checker(1e-2, 1e-3);
-  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      this->blob_top_vec_);
+  // GradientChecker<TypeParam> checker(1e-2, 1e-3);
+  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+  //     this->blob_top_vec_);
 }
 
 #endif

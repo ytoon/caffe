@@ -118,6 +118,12 @@ class Net {
   void ToProto(NetParameter* param, bool write_diff = false) const;
   /// @brief Writes the net to an HDF5 file.
   void ToHDF5(const string& filename, bool write_diff = false) const;
+  /// @brief returns the multi-task's loss layers(name, layer_id).
+  const map<string, int>& loss_layer_names_index() const {
+    return loss_layer_names_index_;
+  }
+  /// @brief returns the top_id_vecs_
+  const vector<vector<int> >& top_id_vecs() const {return top_id_vecs_;}
 
   /// @brief returns the network name.
   inline const string& name() const { return name_; }
@@ -154,6 +160,12 @@ class Net {
   }
   inline const vector<Dtype>& blob_loss_weights() const {
     return blob_loss_weights_;
+  }
+  inline void update_blob_loss_weights(const int index, const Dtype value) {
+    if (index >= blob_loss_weights_.size()) {
+      return;
+    }
+    blob_loss_weights_[index] = value;
   }
   inline const vector<bool>& layer_need_backward() const {
     return layer_need_backward_;
@@ -294,6 +306,8 @@ class Net {
   bool debug_info_;
   /// The root net that actually holds the shared layers in data parallelism
   const Net* const root_net_;
+  /// The loss layers map with format as (name, layer_id).
+  map<string, int> loss_layer_names_index_;
   DISABLE_COPY_AND_ASSIGN(Net);
 };
 

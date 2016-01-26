@@ -11,6 +11,8 @@
 #include "caffe/test/test_caffe_main.hpp"
 #include "caffe/test/test_gradient_check_util.hpp"
 
+#include <fstream>
+
 namespace caffe {
 
 // Reference local convolution for checking results:
@@ -268,14 +270,6 @@ TYPED_TEST(LocalConvolutionLayerTest, TestGradient) {
       layer_param.mutable_local_convolution_param();
   this->blob_bottom_vec_.push_back(this->blob_bottom_2_);
   this->blob_top_vec_.push_back(this->blob_top_2_);
-  // const Dtype* bottom_data = this->blob_bottom_->cpu_data();
-  // for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-  //   EXPECT_EQ(bottom_data[i], 2.0);
-  // }
-  // const Dtype* bottom_data_2 = this->blob_bottom_2_->cpu_data();
-  // for (int i = 0; i < this->blob_bottom_2_->count(); ++i) {
-  //   EXPECT_EQ(bottom_data_2[i], 2.0);
-  // }
   local_convolution_param->add_kernel_size(3);
   local_convolution_param->add_stride(2);
   local_convolution_param->set_num_output(2);

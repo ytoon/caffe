@@ -2,6 +2,8 @@
 
 #include <string>
 #include <vector>
+#include <map>
+#include <algorithm>
 
 #include "caffe/solver.hpp"
 #include "caffe/util/hdf5.hpp"
@@ -194,9 +196,12 @@ void Solver<Dtype>::Step(int iters) {
   vector<Blob<Dtype>*> bottom_vec;
   const int start_iter = iter_;
   const int stop_iter = iter_ + iters;
+  const Dtype theta_epsilon = param_.has_theta_epsilon() ? 
+                                  param_.theta_epsilon() : (Dtype)0;
   int average_loss = this->param_.average_loss();
   vector<Dtype> losses;
   Dtype smoothed_loss = 0;
+  int strip_iter = 0;
 
   while (iter_ < stop_iter) {
     // zero-init the params
@@ -205,6 +210,10 @@ void Solver<Dtype>::Step(int iters) {
         && (iter_ > 0 || param_.test_initialization())
         && Caffe::root_solver()) {
       TestAll();
+      if (param_.has_scale_factor() && param_.has_theta_epsilon() && 
+        param_.has_ignore_loss_layer()) {
+        strip_iter++;
+      }
       if (requested_early_exit_) {
         // Break out of the while loop because stop was requested while testing.
         break;
@@ -244,6 +253,15 @@ void Solver<Dtype>::Step(int iters) {
         const Dtype loss_weight =
             net_->blob_loss_weights()[net_->output_blob_indices()[j]];
         for (int k = 0; k < result[j]->count(); ++k) {
+          if (param_.has_scale_factor() && param_.has_theta_epsilon() && 
+            param_.has_ignore_loss_layer()) {
+            typename map<string, vector<Dtype> >::iterator it = 
+                train_err_.find(output_name);
+            if (it != train_err_.end()) {
+              (it->second).push_back(result_vec[k]);
+              // LOG(INFO) <<"train vector " << output_name << " size: " << (it->second).size();
+            }
+          }
           ostringstream loss_msg_stream;
           if (loss_weight) {
             loss_msg_stream << " (* " << loss_weight
@@ -259,7 +277,44 @@ void Solver<Dtype>::Step(int iters) {
       callbacks_[i]->on_gradients_ready();
     }
     ApplyUpdate();
+    if (strip_iter && strip_iter % 2 == 0) {
+      CHECK_EQ(train_err_.size(), test_err_.size())
+        << "the map size of train_err must be equal to test_err's.";
 
+      typename map<string, vector<Dtype> >::iterator it_train_err;
+      typename map<string, vector<Dtype> >::iterator it_test_err;
+      map<string, int> loss_layer_names_index = net_->loss_layer_names_index();
+
+      for (it_train_err = train_err_.begin(), it_test_err = test_err_.begin(); 
+        it_train_err != train_err_.end(); ++it_train_err, ++it_test_err) {
+        Dtype train_err_diff = (it_train_err->second)[0] - (it_train_err->second)[1];
+        Dtype test_err_diff = (it_test_err->second)[0] - (it_test_err->second)[1];
+
+        Dtype theta_mu = param_.scale_factor() * ((train_err_diff > 0 ? train_err_diff : 0)
+          / (it_train_err->second)[0]) * ((test_err_diff > 0 ? test_err_diff : 0) / (it_test_err->second)[0]);
+
+        using std::max;
+        using std::min;
+        Dtype loss_weight = min((Dtype)1.0, max(theta_epsilon, 
+                                theta_mu - (it_train_err->second)[1]));
+        // LOG(INFO) << "loss layer " << it_train_err->first << " new loss weight: " << loss_weight; 
+        const int layer_id = loss_layer_names_index[it_train_err->first];
+        // LOG(INFO) << "loss layer " << it_train_err->first << " id: " << layer_id;
+        // LOG(INFO) << (it_train_err->second)[0] << " " << (it_train_err->second)[1];
+        // LOG(INFO) << (it_test_err->second)[0] << " " << (it_test_err->second)[1];
+        Layer<Dtype>* layer = net_->layers()[layer_id].get();
+        layer->set_loss(0, loss_weight);
+        layer->set_loss_alter(true);
+        const vector<vector<int> > top_id_vecs = net_->top_id_vecs();
+        net_->update_blob_loss_weights(top_id_vecs[layer_id][0], loss_weight);
+
+        (it_train_err->second).erase((it_train_err->second).begin(), 
+          (it_train_err->second).begin() + 1);
+        (it_test_err->second).erase((it_test_err->second).begin(), 
+          (it_test_err->second).begin() + 1);
+      }
+      strip_iter = 1;
+    }
     // Increment the internal iter_ counter -- its value should always indicate
     // the number of times the weights have been updated.
     ++iter_;
@@ -286,7 +341,21 @@ void Solver<Dtype>::Solve(const char* resume_file) {
   CHECK(Caffe::root_solver());
   LOG(INFO) << "Solving " << net_->name();
   LOG(INFO) << "Learning Rate Policy: " << param_.lr_policy();
-
+  // Initialize the error maps if multi-task training.
+  if (param_.has_scale_factor() && param_.has_theta_epsilon() && 
+    param_.has_ignore_loss_layer()) {
+    map<string, int> loss_layer_names_index = net_->loss_layer_names_index();
+    vector<Dtype> train_vec;
+    vector<Dtype> test_vec;
+    for (map<string, int>::iterator it = loss_layer_names_index.begin(); 
+      it != loss_layer_names_index.end(); ++it) {
+      if (param_.ignore_loss_layer() == (it->first))
+        continue;
+      // LOG(INFO) << "loss layer name: " << it->first;
+      train_err_[it->first] = train_vec;
+      test_err_[it->first] = test_vec;
+    }
+  }
   // Initialize to false every time we start solving.
   requested_early_exit_ = false;
 
@@ -401,6 +470,15 @@ void Solver<Dtype>::Test(const int test_net_id) {
     const Dtype loss_weight = test_net->blob_loss_weights()[output_blob_index];
     ostringstream loss_msg_stream;
     const Dtype mean_score = test_score[i] / param_.test_iter(test_net_id);
+    if (param_.has_scale_factor() && param_.has_theta_epsilon() && 
+      param_.has_ignore_loss_layer()) {
+      typename map<string, vector<Dtype> >::iterator it = test_err_.find(output_name);
+      if (it != test_err_.end()) {
+        (it->second).push_back(mean_score);
+        // LOG(INFO) <<"test vector " << output_name << " size: " << (it->second).size();
+      }
+    }
+
     if (loss_weight) {
       loss_msg_stream << " (* " << loss_weight
                       << " = " << loss_weight * mean_score << " loss)";

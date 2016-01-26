@@ -3,6 +3,7 @@
 #include <boost/function.hpp>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "caffe/net.hpp"
 #include "caffe/solver_factory.hpp"
@@ -127,6 +128,9 @@ class Solver {
   bool requested_early_exit_;
 
   DISABLE_COPY_AND_ASSIGN(Solver);
+  private:
+    map<string, vector<Dtype> >train_err_;
+    map<string, vector<Dtype> >test_err_;
 };
 
 /**

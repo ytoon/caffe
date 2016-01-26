@@ -71,6 +71,7 @@ class Layer {
     LayerSetUp(bottom, top);
     Reshape(bottom, top);
     SetLossWeights(top);
+    SetLossAlter();
   }
 
   /**
@@ -201,7 +202,7 @@ class Layer {
   }
 
   /**
-   * @brief Sets the loss associated with a top blob at a given index.
+   * @brief Set the loss associated with a top blob at a given index.
    */
   inline void set_loss(const int top_index, const Dtype value) {
     if (loss_.size() <= top_index) {
@@ -209,7 +210,18 @@ class Layer {
     }
     loss_[top_index] = value;
   }
-
+  /**
+   * @brief Sets the loss associated with a top blob at a given index.
+   */
+  inline void SetLossAlter(bool alter = false) {
+    set_loss_alter();
+  }
+  /**
+   * @brief Sets the loss associated with a top blob at a given index.
+   */
+  inline void set_loss_alter(bool alter = false) {
+    loss_alter_ = alter;
+  }
   /**
    * @brief Returns the layer type.
    */
@@ -330,7 +342,8 @@ class Layer {
   /** The vector that indicates whether each top blob has a non-zero weight in
    *  the objective function. */
   vector<Dtype> loss_;
-
+  /** The bool variable that indicates whether the loss weight change. */
+  bool loss_alter_;
   /** @brief Using the CPU device, compute the layer output. */
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) = 0;

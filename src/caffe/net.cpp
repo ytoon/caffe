@@ -159,6 +159,10 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       if (layer->loss(top_id)) {
         LOG_IF(INFO, Caffe::root_solver())
             << "    with loss weight " << layer->loss(top_id);
+        // TODO: code module that stores the layer_id of the multi-task net.
+        loss_layer_names_index_[layer_names_[layer_id]] = layer_id;
+        // multi_task_layer_ids_.push_back(layer_id);
+        LOG(INFO) << "layer_id: " << layer_id;
       }
       memory_used_ += top_vecs_[layer_id][top_id]->count();
     }
