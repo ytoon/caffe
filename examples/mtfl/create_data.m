@@ -1,11 +1,19 @@
+
+clear all
+close all
+clc
+
+load('mean.mat');
+load('std.mat');
+
 %% WRITING TO HDF5
-fileprex='/media/ytoon/Elements/mtfl/train_data/train';
+fileprex='/media/ytoon/Elements/mtfl/train_hdf5/train';
 filetype='.h5';
-filename='/media/ytoon/Elements/mtfl/train_data/train1.h5';
-image_data_path = '/media/ytoon/Elements/mtfl/dataset/';
+filename='/media/ytoon/Elements/mtfl/train_hdf5/train1.h5';
+image_data_path = '/media/ytoon/Elements/mtfl/train/';
 
 % open the file and read data to a matrix
-file_id = fopen('training.txt', 'r');
+file_id = fopen('train.txt', 'r');
 
 % CREATE list.txt containing filename, to be used as source for HDF5_DATA_LAYER
 FILE=fopen('train_list.txt', 'w');
@@ -34,13 +42,22 @@ for batchno=1:num_total_samples/chunksz
       txt = txt(1:15);
       im_path = strcat(image_data_path, txt(1, 1));
       im = imread(char(im_path));
+%       xy = cellfun(@str2num, txt(1, 2:11));
+%       imshow(im); hold on;
+%       for j = 1:5
+%         plot(xy(1, j), xy(1, j + 5), '.g');
+%       end
+%       hold off;
+      
       [h, w, ~] = size(im);
       im = imresize(im, [40, 40]);
       [~, ~, c] = size(im);
       if c == 3
           im = rgb2gray(im);
       end
-      im = im2double(im);
+      im = double(im);
+      im = im - mean;
+      im = im ./ std;
       % subtract mean image
 %       I(:, :, 3) = (im(:, :, 1) - im_mean(:, :, 3))';
 %       I(:, :, 2) = (im(:, :, 2) - im_mean(:, :, 2))';

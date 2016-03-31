@@ -76,9 +76,9 @@ TYPED_TEST(Im2colLayerTest, TestGradient) {
   convolution_param->add_kernel_size(3);
   convolution_param->add_stride(2);
   Im2colLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-2);
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 TYPED_TEST(Im2colLayerTest, TestGradientForceND) {
@@ -90,9 +90,9 @@ TYPED_TEST(Im2colLayerTest, TestGradientForceND) {
   convolution_param->add_stride(2);
   convolution_param->set_force_nd_im2col(true);
   Im2colLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-2);
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 TYPED_TEST(Im2colLayerTest, TestRect) {
@@ -123,9 +123,9 @@ TYPED_TEST(Im2colLayerTest, TestRectGradient) {
   convolution_param->set_kernel_w(3);
   convolution_param->add_stride(2);
   Im2colLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-2);
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 }  // namespace caffe

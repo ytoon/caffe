@@ -3,8 +3,8 @@
 detector.py is an out-of-the-box windowed detector
 callable from the command line.
 
-By default it configures and runs the Caffe reference ImageNet model.
-Note that this model was trained for image classification and not detection,
+By default it configures and runs the Caffe reference ImageNet models.
+Note that this models was trained for image classification and not detection,
 and finetuning for detection can be expected to improve results.
 
 The selective_search_ijcv_with_python code required for the selective search
@@ -53,7 +53,7 @@ def main(argv):
         "--pretrained_model",
         default=os.path.join(pycaffe_dir,
                 "../models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel"),
-        help="Trained model weights file."
+        help="Trained models weights file."
     )
     parser.add_argument(
         "--crop_mode",

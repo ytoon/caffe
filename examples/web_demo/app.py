@@ -141,7 +141,7 @@ class ImagenetClassifier(object):
 
         self.bet = cPickle.load(open(bet_file))
         # A bias to prefer children nodes in single-chain paths
-        # I am setting the value to 0.1 as a quick, simple model.
+        # I am setting the value to 0.1 as a quick, simple models.
         # We could use better psychological models here...
         self.bet['infogain'] -= np.array(self.bet['preferences']) * 0.1
 

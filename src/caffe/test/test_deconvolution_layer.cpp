@@ -149,9 +149,9 @@ TYPED_TEST(DeconvolutionLayerTest, TestGradient) {
   convolution_param->mutable_weight_filler()->set_type("gaussian");
   convolution_param->mutable_bias_filler()->set_type("gaussian");
   DeconvolutionLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-3);
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  GradientChecker<Dtype> checker(1e-2, 1e-3);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 TYPED_TEST(DeconvolutionLayerTest, TestNDAgainst2D) {
@@ -296,9 +296,9 @@ TYPED_TEST(DeconvolutionLayerTest, TestGradient3D) {
   convolution_param->mutable_weight_filler()->set_type("gaussian");
   convolution_param->mutable_bias_filler()->set_type("gaussian");
   DeconvolutionLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-3);
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  GradientChecker<Dtype> checker(1e-2, 1e-3);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 }  // namespace caffe

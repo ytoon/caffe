@@ -1,2 +1,2 @@
-data/mtfl/train_data/train1.h5
-data/mtfl/train_data/train2.h5
+/media/ytoon/Elements/mtfl/train_hdf5/train1.h5
+/media/ytoon/Elements/mtfl/train_hdf5/train2.h5

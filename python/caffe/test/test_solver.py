@@ -17,7 +17,7 @@ class TestSolver(unittest.TestCase):
         test_iter: 10 test_interval: 10 base_lr: 0.01 momentum: 0.9
         weight_decay: 0.0005 lr_policy: 'inv' gamma: 0.0001 power: 0.75
         display: 100 max_iter: 100 snapshot_after_train: false
-        snapshot_prefix: "model" """)
+        snapshot_prefix: "models" """)
         f.close()
         self.solver = caffe.SGDSolver(f.name)
         # also make sure get_solver runs

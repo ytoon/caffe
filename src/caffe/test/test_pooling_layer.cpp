@@ -464,9 +464,9 @@ TYPED_TEST(PoolingLayerTest, TestGradientMax) {
       pooling_param->set_pad(1);
       pooling_param->set_pool(PoolingParameter_PoolMethod_MAX);
       PoolingLayer<Dtype> layer(layer_param);
-      // GradientChecker<Dtype> checker(1e-4, 1e-2);
-      // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      //     this->blob_top_vec_);
+      GradientChecker<Dtype> checker(1e-4, 1e-2);
+      checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+          this->blob_top_vec_);
     }
   }
 }
@@ -528,10 +528,10 @@ TYPED_TEST(PoolingLayerTest, TestGradientMaxTopMask) {
       pooling_param->set_pool(PoolingParameter_PoolMethod_MAX);
       this->blob_top_vec_.push_back(this->blob_top_mask_);
       PoolingLayer<Dtype> layer(layer_param);
-      // GradientChecker<Dtype> checker(1e-4, 1e-2);
-      // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      //     this->blob_top_vec_);
-      // this->blob_top_vec_.pop_back();
+      GradientChecker<Dtype> checker(1e-4, 1e-2);
+      checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+          this->blob_top_vec_);
+      this->blob_top_vec_.pop_back();
     }
   }
 }
@@ -579,9 +579,9 @@ TYPED_TEST(PoolingLayerTest, TestGradientAve) {
       pooling_param->set_stride(2);
       pooling_param->set_pool(PoolingParameter_PoolMethod_AVE);
       PoolingLayer<Dtype> layer(layer_param);
-      // GradientChecker<Dtype> checker(1e-2, 1e-2);
-      // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      //     this->blob_top_vec_);
+      GradientChecker<Dtype> checker(1e-2, 1e-2);
+      checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+          this->blob_top_vec_);
     }
   }
 }
@@ -598,9 +598,9 @@ TYPED_TEST(PoolingLayerTest, TestGradientAvePadded) {
       pooling_param->set_pad(2);
       pooling_param->set_pool(PoolingParameter_PoolMethod_AVE);
       PoolingLayer<Dtype> layer(layer_param);
-      // GradientChecker<Dtype> checker(1e-2, 1e-2);
-      // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      //     this->blob_top_vec_);
+      GradientChecker<Dtype> checker(1e-2, 1e-2);
+      checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+          this->blob_top_vec_);
     }
   }
 }
@@ -1044,9 +1044,9 @@ TYPED_TEST(CuDNNPoolingLayerTest, TestGradientMaxCuDNN) {
       pooling_param->set_pad(0);
       pooling_param->set_pool(PoolingParameter_PoolMethod_MAX);
       CuDNNPoolingLayer<TypeParam> layer(layer_param);
-      // GradientChecker<TypeParam> checker(1e-4, 1e-2);
-      // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      //     this->blob_top_vec_);
+      GradientChecker<TypeParam> checker(1e-4, 1e-2);
+      checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+          this->blob_top_vec_);
     }
   }
 }
@@ -1151,9 +1151,9 @@ TYPED_TEST(CuDNNPoolingLayerTest, TestGradientAveCuDNN) {
       pooling_param->set_stride(2);
       pooling_param->set_pool(PoolingParameter_PoolMethod_AVE);
       CuDNNPoolingLayer<TypeParam> layer(layer_param);
-      // GradientChecker<TypeParam> checker(1e-2, 1e-2);
-      // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      //     this->blob_top_vec_);
+      GradientChecker<TypeParam> checker(1e-2, 1e-2);
+      checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+          this->blob_top_vec_);
     }
   }
 }
@@ -1169,9 +1169,9 @@ TYPED_TEST(CuDNNPoolingLayerTest, TestGradientAvePaddedCuDNN) {
       pooling_param->set_pad(2);
       pooling_param->set_pool(PoolingParameter_PoolMethod_AVE);
       CuDNNPoolingLayer<TypeParam> layer(layer_param);
-      // GradientChecker<TypeParam> checker(1e-2, 1e-2);
-      // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      //     this->blob_top_vec_);
+      GradientChecker<TypeParam> checker(1e-2, 1e-2);
+      checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+          this->blob_top_vec_);
     }
   }
 }

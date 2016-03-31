@@ -59,9 +59,9 @@ TYPED_TEST(InfogainLossLayerTest, TestGradient) {
   typedef typename TypeParam::Dtype Dtype;
   LayerParameter layer_param;
   InfogainLossLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-4, 2e-2, 1701, 1, 0.01);
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_, 0);
+  GradientChecker<Dtype> checker(1e-4, 2e-2, 1701, 1, 0.01);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_, 0);
 }
 
 }  // namespace caffe

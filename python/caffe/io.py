@@ -186,7 +186,7 @@ class Transformer:
     def set_transpose(self, in_, order):
         """
         Set the input channel order for e.g. RGB to BGR conversion
-        as needed for the reference ImageNet model.
+        as needed for the reference ImageNet models.
 
         Parameters
         ----------
@@ -202,7 +202,7 @@ class Transformer:
     def set_channel_swap(self, in_, order):
         """
         Set the input channel order for e.g. RGB to BGR conversion
-        as needed for the reference ImageNet model.
+        as needed for the reference ImageNet models.
         N.B. this assumes the channels are the first dimension AFTER transpose.
 
         Parameters

@@ -1,11 +1,18 @@
+clear all
+close all
+clc
+
+load('mean.mat');
+load('std.mat');
+
 %% WRITING TO HDF5
-fileprex='/media/ytoon/Elements/mtfl/train_data/train';
+fileprex='/media/ytoon/Elements/mtfl/train_hdf5/train';
 filetype='.h5';
-filename='/media/ytoon/Elements/mtfl/train_data/train2.h5';
-image_data_path = '/media/ytoon/Elements/mtfl/dataset/';
+filename='/media/ytoon/Elements/mtfl/train_hdf5/train2.h5';
+image_data_path = '/media/ytoon/Elements/mtfl/train/';
 
 % open the file and read data to a matrix
-file_id = fopen('training.txt', 'r');
+file_id = fopen('train.txt', 'r');
 
 % CREATE list.txt containing filename, to be used as source for HDF5_DATA_LAYER
 FILE=fopen('train_list.txt', 'a');
@@ -20,7 +27,7 @@ num_total_samples = 10000;
 chunksz=100;
 created_flag=false;
 totalct=0;
-count = 12;
+count = 2;
 
 for batchno=1:num_total_samples/chunksz
   fprintf('batch no. %d\n', batchno);
@@ -40,8 +47,9 @@ for batchno=1:num_total_samples/chunksz
       if c == 3
           im = rgb2gray(im);
       end
-      im = flip(im2double(im), 2);
-      
+      im = flip(double(im), 2);
+      im = im - mean;
+      im = im ./ std;
       % subtract mean image
 %       I(:, :, 3) = (im(:, :, 1) - im_mean(:, :, 3))';
 %       I(:, :, 2) = (im(:, :, 2) - im_mean(:, :, 2))';
@@ -50,6 +58,14 @@ for batchno=1:num_total_samples/chunksz
       landmark = cellfun(@str2num, txt(2:11));
       landmark(1:5) = w - landmark(1:5);
       landmark = landmark([2, 1, 3, 5, 4, 7, 6, 8, 10, 9]);
+      
+%       xy = landmark;
+%       imshow(im); hold on;
+%       for j = 1:5
+%         plot(xy(1, j), xy(1, j + 5), '.g');
+%       end
+%       hold off;
+      
       landmark(1:5) = landmark(1:5) / w;
       landmark(6:10) = landmark(6:10)/ h;
       

@@ -44,12 +44,12 @@ def valid_dirname(dirname):
     except Exception as e:
         print('ERROR: {}'.format(e))
         raise argparse.ArgumentTypeError(
-            'Must be valid Caffe model directory with a correct readme.md')
+            'Must be valid Caffe models directory with a correct readme.md')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Download trained model binary.')
+        description='Download trained models binary.')
     parser.add_argument('dirname', type=valid_dirname)
     args = parser.parse_args()
 
@@ -63,14 +63,14 @@ if __name__ == '__main__':
         with open(filename, 'r') as f:
             return hashlib.sha1(f.read()).hexdigest() == sha1
 
-    # Check if model exists.
+    # Check if models exists.
     if os.path.exists(model_filename) and model_checks_out():
         print("Model already exists.")
         sys.exit(0)
 
-    # Download and verify model.
+    # Download and verify models.
     urllib.urlretrieve(
         frontmatter['caffemodel_url'], model_filename, reporthook)
     if not model_checks_out():
-        print('ERROR: model did not download correctly! Run this again.')
+        print('ERROR: models did not download correctly! Run this again.')
         sys.exit(1)

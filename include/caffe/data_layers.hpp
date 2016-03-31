@@ -342,6 +342,45 @@ class WindowDataLayer : public BasePrefetchingDataLayer<Dtype> {
   vector<std::pair<std::string, Datum > > image_database_cache_;
 };
 
+/**
+ * @brief Provides data to the Net from windows of images files, specified
+ *        by a window data file. And it affords multiple lables.
+ *
+ * TODO(dox): thorough documentation for Forward and proto params.
+ */
+template <typename Dtype>
+class GenericWindowDataLayer : public BasePrefetchingDataLayer<Dtype> {
+ public:
+  explicit GenericWindowDataLayer(const LayerParameter& param)
+      : BasePrefetchingDataLayer<Dtype>(param) {}
+  virtual ~GenericWindowDataLayer();
+  virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+
+  virtual inline const char* type() const { return "GenericWindowData"; }
+  virtual inline int ExactNumBottomBlobs() const { return 0; }
+  virtual inline int ExactNumTopBlobs() const { return 2; }
+
+ protected:
+  virtual unsigned int PrefetchRand();
+  virtual void load_batch(Batch<Dtype>* batch);
+
+  static const int image_height = 370;
+  static const int image_width = 1226;
+
+  shared_ptr<Caffe::RNG> prefetch_rng_;
+  vector<std::pair<std::string, std::string > > image_database_;
+  enum WindowField { IMAGE_INDEX, X1, Y1, X2, Y2, X_TRANS_LABEL, 
+    Z_TRANS_LABEL, Y_ROTAION_LABEL, NUM };
+  vector<vector<float> > image_windows_;
+  Blob<Dtype> data_mean_;
+  vector<Dtype> mean_values_;
+  bool has_mean_file_;
+  bool has_mean_values_;
+  bool cache_images_;
+
+};
+
 }  // namespace caffe
 
 #endif  // CAFFE_DATA_LAYERS_HPP_

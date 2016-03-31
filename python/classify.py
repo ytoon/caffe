@@ -2,7 +2,7 @@
 """
 classify.py is an out-of-the-box image classifer callable from the command line.
 
-By default it configures and runs the Caffe reference ImageNet model.
+By default it configures and runs the Caffe reference ImageNet models.
 """
 import numpy as np
 import os
@@ -38,7 +38,7 @@ def main(argv):
         "--pretrained_model",
         default=os.path.join(pycaffe_dir,
                 "../models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel"),
-        help="Trained model weights file."
+        help="Trained models weights file."
     )
     parser.add_argument(
         "--gpu",

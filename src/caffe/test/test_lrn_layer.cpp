@@ -157,21 +157,21 @@ TYPED_TEST(LRNLayerTest, TestGradientAcrossChannels) {
   typedef typename TypeParam::Dtype Dtype;
   LayerParameter layer_param;
   LRNLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-2);
-  // layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
-  // layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
-  // for (int i = 0; i < this->blob_top_->count(); ++i) {
-  //   this->blob_top_->mutable_cpu_diff()[i] = 1.;
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
+  layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
+  layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
+  for (int i = 0; i < this->blob_top_->count(); ++i) {
+    this->blob_top_->mutable_cpu_diff()[i] = 1.;
+  }
+  vector<bool> propagate_down(this->blob_bottom_vec_.size(), true);
+  layer.Backward(this->blob_top_vec_, propagate_down,
+                 this->blob_bottom_vec_);
+  // for (int i = 0; i < this->blob_bottom_->count(); ++i) {
+  //   std::cout << "CPU diff " << this->blob_bottom_->cpu_diff()[i]
+  //       << std::endl;
   // }
-  // vector<bool> propagate_down(this->blob_bottom_vec_.size(), true);
-  // layer.Backward(this->blob_top_vec_, propagate_down,
-  //                this->blob_bottom_vec_);
-  // // for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-  // //   std::cout << "CPU diff " << this->blob_bottom_->cpu_diff()[i]
-  // //       << std::endl;
-  // // }
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 TYPED_TEST(LRNLayerTest, TestGradientAcrossChannelsLargeRegion) {
@@ -179,21 +179,21 @@ TYPED_TEST(LRNLayerTest, TestGradientAcrossChannelsLargeRegion) {
   LayerParameter layer_param;
   layer_param.mutable_lrn_param()->set_local_size(15);
   LRNLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-2);
-  // layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
-  // layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
-  // for (int i = 0; i < this->blob_top_->count(); ++i) {
-  //   this->blob_top_->mutable_cpu_diff()[i] = 1.;
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
+  layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
+  layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
+  for (int i = 0; i < this->blob_top_->count(); ++i) {
+    this->blob_top_->mutable_cpu_diff()[i] = 1.;
+  }
+  vector<bool> propagate_down(this->blob_bottom_vec_.size(), true);
+  layer.Backward(this->blob_top_vec_, propagate_down,
+                 this->blob_bottom_vec_);
+  // for (int i = 0; i < this->blob_bottom_->count(); ++i) {
+  //   std::cout << "CPU diff " << this->blob_bottom_->cpu_diff()[i]
+  //       << std::endl;
   // }
-  // vector<bool> propagate_down(this->blob_bottom_vec_.size(), true);
-  // layer.Backward(this->blob_top_vec_, propagate_down,
-  //                this->blob_bottom_vec_);
-  // // for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-  // //   std::cout << "CPU diff " << this->blob_bottom_->cpu_diff()[i]
-  // //       << std::endl;
-  // // }
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 TYPED_TEST(LRNLayerTest, TestSetupWithinChannel) {
@@ -235,14 +235,14 @@ TYPED_TEST(LRNLayerTest, TestGradientWithinChannel) {
       LRNParameter_NormRegion_WITHIN_CHANNEL);
   layer_param.mutable_lrn_param()->set_local_size(3);
   LRNLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-2);
-  // layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
-  // layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
-  // for (int i = 0; i < this->blob_top_->count(); ++i) {
-  //   this->blob_top_->mutable_cpu_diff()[i] = 1.;
-  // }
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
+  layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
+  layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
+  for (int i = 0; i < this->blob_top_->count(); ++i) {
+    this->blob_top_->mutable_cpu_diff()[i] = 1.;
+  }
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 #ifdef USE_CUDNN
@@ -373,18 +373,18 @@ TYPED_TEST(CuDNNLRNLayerTest, TestForwardAcrossChannelsLargeRegionCuDNN) {
 TYPED_TEST(CuDNNLRNLayerTest, TestGradientAcrossChannelsCuDNN) {
   typedef TypeParam Dtype;
   LayerParameter layer_param;
-  // CuDNNLRNLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-2);
-  // layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
-  // layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
-  // for (int i = 0; i < this->blob_top_->count(); ++i) {
-  //   this->blob_top_->mutable_cpu_diff()[i] = 1.;
-  // }
-  // vector<bool> propagate_down(this->blob_bottom_vec_.size(), true);
-  // layer.Backward(this->blob_top_vec_, propagate_down,
-  //                this->blob_bottom_vec_);
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  CuDNNLRNLayer<Dtype> layer(layer_param);
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
+  layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
+  layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
+  for (int i = 0; i < this->blob_top_->count(); ++i) {
+    this->blob_top_->mutable_cpu_diff()[i] = 1.;
+  }
+  vector<bool> propagate_down(this->blob_bottom_vec_.size(), true);
+  layer.Backward(this->blob_top_vec_, propagate_down,
+                 this->blob_bottom_vec_);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 TYPED_TEST(CuDNNLRNLayerTest, TestForwardWithinChannel) {
@@ -412,14 +412,14 @@ TYPED_TEST(CuDNNLRNLayerTest, TestGradientWithinChannel) {
       LRNParameter_NormRegion_WITHIN_CHANNEL);
   layer_param.mutable_lrn_param()->set_local_size(3);
   CuDNNLCNLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-2);
-  // layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
-  // layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
-  // for (int i = 0; i < this->blob_top_->count(); ++i) {
-  //   this->blob_top_->mutable_cpu_diff()[i] = 1.;
-  // }
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
+  layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
+  layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
+  for (int i = 0; i < this->blob_top_->count(); ++i) {
+    this->blob_top_->mutable_cpu_diff()[i] = 1.;
+  }
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 TYPED_TEST(CuDNNLRNLayerTest, TestGradientAcrossChannelsLargeRegionCuDNN) {
@@ -427,17 +427,17 @@ TYPED_TEST(CuDNNLRNLayerTest, TestGradientAcrossChannelsLargeRegionCuDNN) {
   LayerParameter layer_param;
   layer_param.mutable_lrn_param()->set_local_size(15);
   CuDNNLRNLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-2, 1e-2);
-  // layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
-  // layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
-  // for (int i = 0; i < this->blob_top_->count(); ++i) {
-  //   this->blob_top_->mutable_cpu_diff()[i] = 1.;
-  // }
-  // vector<bool> propagate_down(this->blob_bottom_vec_.size(), true);
-  // layer.Backward(this->blob_top_vec_, propagate_down,
-  //                this->blob_bottom_vec_);
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
+  layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
+  layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
+  for (int i = 0; i < this->blob_top_->count(); ++i) {
+    this->blob_top_->mutable_cpu_diff()[i] = 1.;
+  }
+  vector<bool> propagate_down(this->blob_bottom_vec_.size(), true);
+  layer.Backward(this->blob_top_vec_, propagate_down,
+                 this->blob_bottom_vec_);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 #endif

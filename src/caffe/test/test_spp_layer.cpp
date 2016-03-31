@@ -119,10 +119,10 @@ TYPED_TEST(SPPLayerTest, TestGradient) {
   SPPParameter* spp_param = layer_param.mutable_spp_param();
   spp_param->set_pyramid_height(3);
   SPPLayer<Dtype> layer(layer_param);
-  // GradientChecker<Dtype> checker(1e-4, 1e-2);
-  // layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
-  // checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-  //     this->blob_top_vec_);
+  GradientChecker<Dtype> checker(1e-4, 1e-2);
+  layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
 }
 
 
